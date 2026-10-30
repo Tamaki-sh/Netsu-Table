@@ -1,0 +1,15 @@
+# Render Blueprint for the Netsu room-code service (free plan).
+services:
+  - type: web
+    name: netsu-rooms
+    runtime: python
+    plan: free
+    rootDir: server
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -u room_server.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: MAX_ROOMS
+        value: "500"
