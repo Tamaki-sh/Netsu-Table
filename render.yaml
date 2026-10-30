@@ -4,7 +4,6 @@ services:
     name: netsu-rooms
     runtime: python
     plan: free
-    rootDir: server
     buildCommand: pip install -r requirements.txt
     startCommand: python -u room_server.py
     healthCheckPath: /healthz
