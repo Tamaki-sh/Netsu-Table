@@ -1,0 +1,16 @@
+{
+ "_help": "Letters everyone receives. Each needs a unique id (never reuse one). rewards: tokens, gifts {sweets/tea/books/flowers: n}, character (id), skin (id). start/end are optional UTC times. Add \"to\": [\"NT-XXXX-XXXX\"] to send a letter only to those Player IDs (shown in Settings). This file is also read live from GitHub (remote_url).",
+ "remote_url": "https://raw.githubusercontent.com/Tamaki-sh/Netsu-Table/main/mail.json",
+ "mail": [
+  {
+   "id": "haru_pick_gift_01",
+   "from": "Haru",
+   "title": "A present from Haru!",
+   "body": "Thanks for spending time at the academy! Here are some Memory Tokens, and you can invite any resident you like to your dorm. Choose carefully!",
+   "rewards": {
+    "tokens": 3000,
+    "pick_character": true
+   }
+  }
+ ]
+}

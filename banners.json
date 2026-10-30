@@ -1,8 +1,68 @@
 {
-	"_help": "Times are UTC (ISO 8601). A banner shows only between start and end. 'skins' must be skin ids that already ship in the game. Set remote_url later to load this same file from the web instead.",
-	"remote_url": "https://raw.githubusercontent.com/Tamaki-sh/Netsu-Table/main/banners.json",
-	"banners": [
-		{"id": "girls", "skins": ["vivian_halloween", "emily_halloween"], "start": "2026-10-01T00:00:00Z", "end": "2026-11-10T04:59:59Z"},
-		{"id": "boys", "skins": ["ronald_halloween", "charles_halloween"], "start": "2026-10-01T00:00:00Z", "end": "2026-11-10T04:59:59Z"}
-	]
+ "_help": "Times are UTC (ISO 8601). A banner shows only between start and end. 'skins' must be skin ids that already ship in the game. 'released' = characters out at launch. To release more, add a banner with \"characters\": [\"id\"] — they go live at its start time.",
+ "released": [
+  "ronald",
+  "emily",
+  "vivian",
+  "charles",
+  "cecilia",
+  "doris",
+  "haru",
+  "sara",
+  "marian",
+  "noah",
+  "john",
+  "silk"
+ ],
+ "remote_url": "https://raw.githubusercontent.com/Tamaki-sh/Netsu-Table/main/banners.json",
+ "banners": [
+  {
+   "id": "girls",
+   "skins": [
+    "vivian_halloween",
+    "emily_halloween"
+   ],
+   "start": "2026-10-01T00:00:00Z",
+   "end": "2026-11-10T04:59:59Z"
+  },
+  {
+   "id": "boys",
+   "skins": [
+    "ronald_halloween",
+    "charles_halloween"
+   ],
+   "start": "2026-10-01T00:00:00Z",
+   "end": "2026-11-10T04:59:59Z"
+  },
+  {
+   "id": "lila_rateup",
+   "type": "rate_up",
+   "bond_y": 0.0,
+   "characters": [
+    "lila"
+   ],
+   "pool": "perm_girls",
+   "name": "Meadow Serenade",
+   "title": "MEADOW SERENADE",
+   "jp": "草原のセレナーデ",
+   "accent": "#5f9ee0",
+   "start": "2026-10-30T00:00:00Z",
+   "end": "2026-11-24T04:59:59Z"
+  },
+  {
+   "id": "eustace_rateup",
+   "type": "rate_up",
+   "bond_y": -0.07,
+   "characters": [
+    "eustace"
+   ],
+   "pool": "perm_boys",
+   "name": "Autumn Gambit",
+   "title": "AUTUMN GAMBIT",
+   "jp": "秋のギャンビット",
+   "accent": "#4f7fd6",
+   "start": "2026-10-30T00:00:00Z",
+   "end": "2026-12-08T04:59:59Z"
+  }
+ ]
 }
