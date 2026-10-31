@@ -69,7 +69,7 @@ class Relay:
                         await self.error(ws,'Use the same current game build.'); continue
                     if kind=='create':
                         mode=packet.get('mode')
-                        if mode not in ('riichi','pokajan','duel') or packet.get('length',8) not in (4,8):
+                        if mode not in ('riichi','pokajan','duel') or packet.get('length',8) not in (3,4,6,8):
                             await self.error(ws,'Invalid game mode.'); continue
                         if len(self.rooms)>=MAX_ROOMS:
                             await self.error(ws,'Room service is full; try later.'); continue
@@ -83,7 +83,7 @@ class Relay:
                             await self.error(ws,'Room code not found. Check the code and server address.'); continue
                         if candidate.locked:
                             await self.error(ws,'That match has already started.'); continue
-                        if len(candidate.peers)>=(2 if candidate.mode=='duel' else 4):
+                        if len(candidate.peers)>=(2 if candidate.mode=='duel' else (3 if candidate.length in (3,6) else 4)):
                             await self.error(ws,'That room is full.'); continue
                         room=candidate;peer_id=room.next_peer;room.next_peer+=1;room.peers[peer_id]=ws
                         await self.send(room.peers.get(1),{'type':'peer_joined','peer':peer_id})
