@@ -30,6 +30,7 @@ class Relay:
         self.connections = 0
         self.per_ip = defaultdict(int)
         self.attempts = defaultdict(deque)
+        self.transfers = {}   # code -> (save text, expiry). Memory only; codes last 10 minutes.
     async def send(self, ws, value):
         if ws is not None:
             try: await asyncio.wait_for(ws.send(json.dumps(value, separators=(',', ':'))), 5)
@@ -88,6 +89,28 @@ class Relay:
                         room=candidate;peer_id=room.next_peer;room.next_peer+=1;room.peers[peer_id]=ws
                         await self.send(room.peers.get(1),{'type':'peer_joined','peer':peer_id})
                     await self.send(ws,{'type':'welcome','peer':peer_id,'code':room.code,'mode':room.mode,'length':room.length})
+                elif kind in ('transfer_put','transfer_get'):
+                    # Account transfer: one device uploads its save, the other fetches it once.
+                    for c in [c for c,(_,exp) in self.transfers.items() if exp<now]:self.transfers.pop(c,None)
+                    recent=self.attempts[ip]
+                    while recent and now-recent[0]>60:recent.popleft()
+                    if len(recent)>=20:
+                        await self.error(ws,'Too many transfer requests; try again in a minute.'); continue
+                    recent.append(now)
+                    if kind=='transfer_put':
+                        save=packet.get('save')
+                        if not isinstance(save,str) or not save or len(save)>MAX_PACKET-1024 or len(self.transfers)>=2000:
+                            await self.error(ws,'Could not store that save.'); continue
+                        code=''.join(secrets.choice(ALPHABET) for _ in range(8))
+                        while code in self.transfers:code=''.join(secrets.choice(ALPHABET) for _ in range(8))
+                        self.transfers[code]=(save,now+600)
+                        await self.send(ws,{'type':'transfer_code','code':code,'expires':600})
+                    else:
+                        code=str(packet.get('code','')).upper().replace('-','').replace(' ','')
+                        entry=self.transfers.pop(code,None)
+                        if entry is None:
+                            await self.error(ws,'Transfer code not found or expired.'); continue
+                        await self.send(ws,{'type':'transfer_save','save':entry[0]})
                 elif room is None:
                     await self.error(ws,'Create or join a room first.')
                 elif kind=='lock' and peer_id==1:
