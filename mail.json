@@ -23,6 +23,18 @@
    "rewards": {
     "tokens": 3000
    }
+  },
+  {
+   "id": "gift_jjhxdr3j_10000_01",
+   "to": [
+    "NT-JJHX-DR3J"
+   ],
+   "from": "Netsu Academy",
+   "title": "A gift for you!",
+   "body": "Here are 10,000 Memory Tokens. Enjoy!",
+   "rewards": {
+    "tokens": 10000
+   }
   }
  ]
 }
