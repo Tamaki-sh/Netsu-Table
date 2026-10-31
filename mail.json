@@ -11,6 +11,18 @@
     "tokens": 3000,
     "pick_character": true
    }
+  },
+  {
+   "id": "gift_y8svuqfs_3000_01",
+   "to": [
+    "NT-Y8SV-UQFS"
+   ],
+   "from": "Netsu Academy",
+   "title": "A gift for you!",
+   "body": "Here are 3,000 Memory Tokens. Enjoy!",
+   "rewards": {
+    "tokens": 3000
+   }
   }
  ]
 }
