@@ -16,6 +16,7 @@ ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 MAX_ROOMS = int(os.getenv('MAX_ROOMS', '500'))
 MAX_CONNECTIONS = int(os.getenv('MAX_CONNECTIONS', '2048'))
 MAX_PACKET = 262144
+OUTCOME_SECONDS = 30*24*3600   # remember used/expired codes for 30 days (until a restart)
 @dataclass
 class Room:
     code: str
@@ -30,7 +31,9 @@ class Relay:
         self.connections = 0
         self.per_ip = defaultdict(int)
         self.attempts = defaultdict(deque)
-        self.transfers = {}   # code -> (save text, expiry). Memory only; codes last 10 minutes.
+        self.transfers = {}   # code -> (save text, expiry, owner key). Memory only; codes last 10 minutes.
+        self.outcomes = {}    # code -> (status, owner key, forget at): what happened to each code, so the
+                              # sending device can learn it was used ('claimed') or not ('expired'/'cancelled').
     async def send(self, ws, value):
         if ws is not None:
             try: await asyncio.wait_for(ws.send(json.dumps(value, separators=(',', ':'))), 5)
@@ -89,28 +92,49 @@ class Relay:
                         room=candidate;peer_id=room.next_peer;room.next_peer+=1;room.peers[peer_id]=ws
                         await self.send(room.peers.get(1),{'type':'peer_joined','peer':peer_id})
                     await self.send(ws,{'type':'welcome','peer':peer_id,'code':room.code,'mode':room.mode,'length':room.length})
-                elif kind in ('transfer_put','transfer_get'):
+                elif kind in ('transfer_put','transfer_get','transfer_cancel'):
                     # Account transfer: one device uploads its save, the other fetches it once.
-                    for c in [c for c,(_,exp) in self.transfers.items() if exp<now]:self.transfers.pop(c,None)
+                    # The sender gets a secret key; with it, it can cancel an unused code, or learn
+                    # that the code was used (then its own copy stays locked).
+                    for c in [c for c,v in self.transfers.items() if v[1]<now]:
+                        v=self.transfers.pop(c,None)
+                        if v:self.outcomes[c]=('expired',v[2],now+OUTCOME_SECONDS)
+                    for c in [c for c,v in self.outcomes.items() if v[2]<now]:self.outcomes.pop(c,None)
                     recent=self.attempts[ip]
                     while recent and now-recent[0]>60:recent.popleft()
                     if len(recent)>=20:
                         await self.error(ws,'Too many transfer requests; try again in a minute.'); continue
                     recent.append(now)
+                    code=str(packet.get('code','')).upper().replace('-','').replace(' ','')
                     if kind=='transfer_put':
                         save=packet.get('save')
                         if not isinstance(save,str) or not save or len(save)>MAX_PACKET-1024 or len(self.transfers)>=2000:
                             await self.error(ws,'Could not store that save.'); continue
                         code=''.join(secrets.choice(ALPHABET) for _ in range(8))
-                        while code in self.transfers:code=''.join(secrets.choice(ALPHABET) for _ in range(8))
-                        self.transfers[code]=(save,now+600)
-                        await self.send(ws,{'type':'transfer_code','code':code,'expires':600})
-                    else:
-                        code=str(packet.get('code','')).upper().replace('-','').replace(' ','')
+                        while code in self.transfers or code in self.outcomes:code=''.join(secrets.choice(ALPHABET) for _ in range(8))
+                        key=secrets.token_hex(16)
+                        self.transfers[code]=(save,now+600,key)
+                        await self.send(ws,{'type':'transfer_code','code':code,'expires':600,'key':key})
+                    elif kind=='transfer_get':
                         entry=self.transfers.pop(code,None)
                         if entry is None:
                             await self.error(ws,'Transfer code not found or expired.'); continue
+                        if len(self.outcomes)<20000:self.outcomes[code]=('claimed',entry[2],now+OUTCOME_SECONDS)
                         await self.send(ws,{'type':'transfer_save','save':entry[0]})
+                    else:
+                        key=str(packet.get('key',''))
+                        entry=self.transfers.get(code)
+                        if entry is not None:
+                            if not key or not secrets.compare_digest(key,entry[2]):
+                                await self.error(ws,'That code belongs to another device.'); continue
+                            self.transfers.pop(code,None)
+                            self.outcomes[code]=('cancelled',entry[2],now+OUTCOME_SECONDS)
+                            await self.send(ws,{'type':'transfer_status','status':'cancelled'}); continue
+                        past=self.outcomes.get(code)
+                        if past is not None and key and secrets.compare_digest(key,past[1]):
+                            await self.send(ws,{'type':'transfer_status','status':past[0]}); continue
+                        # Unknown: the service restarted (memory is wiped when it sleeps).
+                        await self.send(ws,{'type':'transfer_status','status':'unknown'})
                 elif room is None:
                     await self.error(ws,'Create or join a room first.')
                 elif kind=='lock' and peer_id==1:
